@@ -11,7 +11,7 @@
       @delete="handleDeleteEvent"
     />
 
-    <DayEventsModal
+    <DateEventsModal
       v-if="dayEventsModalDate"
       :date="dayEventsModalDate"
       :events="filteredDayEvents"
@@ -149,7 +149,8 @@
 
           <div class="flex-1 min-h-0 relative">
             <EventList
-              :events="filteredDayEvents.length > 0 ? filteredDayEvents : events"
+              ref="eventListRef"
+              :events="events"
               :selected-id="selectedId"
               @select="handleSelectEvent"
             />
@@ -185,7 +186,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { IcsEvent } from './types'
 import { parseIcsContent, generateIcsString } from './utils/icsHelper'
 import { smartParseEvents } from './services/geminiService'
@@ -193,7 +194,15 @@ import { getDateUTC8 } from './utils/timezoneHelper'
 import EventList from './components/EventList.vue'
 import EventEditor from './components/EventEditor.vue'
 import CalendarView from './components/CalendarView.vue'
-import DayEventsModal from './components/DayEventsModal.vue'
+import DateEventsModal from './components/DateEventsModal.vue'
+
+type EventListRef = InstanceType<typeof EventList> & {
+  scrollToEvent: (eventId: string) => void
+}
+
+type CalendarViewRef = InstanceType<typeof CalendarView> & {
+  navigateToDate: (date: Date) => void
+}
 
 const events = ref<IcsEvent[]>([])
 const selectedId = ref<string | null>(null)
@@ -202,8 +211,10 @@ const isAiLoading = ref(false)
 const aiInput = ref('')
 const activeMobileView = ref<'calendar' | 'list'>('calendar')
 const fileInputRef = ref<HTMLInputElement | null>(null)
-const calendarViewRef = ref<InstanceType<typeof CalendarView> | null>(null)
+const calendarViewRef = ref<CalendarViewRef | null>(null)
+const eventListRef = ref<EventListRef | null>(null)
 const dayEventsModalDate = ref<Date | null>(null)
+const pendingScrollEventId = ref<string | null>(null)
 
 onMounted(() => {
   const saved = sessionStorage.getItem('ventical_events')
@@ -223,6 +234,15 @@ watch(
   },
   { deep: true },
 )
+
+watch(activeMobileView, (newView) => {
+  if (newView === 'list' && pendingScrollEventId.value) {
+    setTimeout(() => {
+      eventListRef.value?.scrollToEvent(pendingScrollEventId.value!)
+      pendingScrollEventId.value = null
+    }, 100)
+  }
+})
 
 const handleFileUpload = (e: Event) => {
   const target = e.target as HTMLInputElement
@@ -277,6 +297,30 @@ const handleAddEvent = (date?: Date) => {
 
 const handleClickDate = (date: Date) => {
   dayEventsModalDate.value = date
+
+  const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
+
+  const dayEvents = events.value.filter((event) => {
+    const eventStart = new Date(event.start)
+    const eventEnd = new Date(event.end)
+    return eventStart < dayEnd && eventEnd > dayStart
+  })
+
+  if (dayEvents.length > 0) {
+    const firstEvent = [...dayEvents].sort(
+      (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
+    )[0]
+    if (firstEvent) {
+      if (window.innerWidth >= 1024) {
+        setTimeout(() => {
+          eventListRef.value?.scrollToEvent(firstEvent.id)
+        }, 100)
+      } else {
+        pendingScrollEventId.value = firstEvent.id
+      }
+    }
+  }
 }
 
 const handleAddEventFromModal = () => {
@@ -355,14 +399,8 @@ const handleSelectEvent = (id: string) => {
     draftEvent.value = null
     selectedId.value = id
 
-    setTimeout(() => {
-      const eventDate = new Date(event.start)
-      calendarViewRef.value?.navigateToDate(eventDate)
-
-      if (window.innerWidth < 1024) {
-        activeMobileView.value = 'calendar'
-      }
-    }, 100)
+    const eventDate = new Date(event.start)
+    calendarViewRef.value?.navigateToDate(eventDate)
   }
 }
 
@@ -370,6 +408,20 @@ const handleCancelEdit = () => {
   selectedId.value = null
   draftEvent.value = null
 }
+
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && !activeEvent.value && dayEventsModalDate.value) {
+    dayEventsModalDate.value = null
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeydown)
+})
 
 const activeEvent = computed(
   () => draftEvent.value || events.value.find((e) => e.id === selectedId.value),

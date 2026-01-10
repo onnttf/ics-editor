@@ -6,26 +6,28 @@
     />
 
     <div
-      class="relative bg-white w-full max-w-md max-h-[80vh] rounded-lg shadow-xl border border-slate-200 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-300"
+      class="relative bg-white w-full max-w-md max-h-[90vh] rounded-lg shadow-xl border border-slate-200 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-300"
     >
       <div
-        class="flex justify-between items-center px-4 md:px-6 py-4 border-b border-slate-200 shrink-0"
+        class="flex justify-between items-center px-4 md:px-6 py-4 md:py-5 border-b border-slate-200 shrink-0"
       >
         <div>
-          <h2 class="text-lg font-black text-slate-900 tracking-tight">{{ formattedDate }}</h2>
+          <h2 class="text-lg md:text-xl font-black text-slate-900 tracking-tight">
+            {{ formattedDate }}
+          </h2>
           <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mt-0.5">
             {{ eventCount }} Events
           </p>
         </div>
         <button
           @click="emit('close')"
-          class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-all"
+          class="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-lg bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-600 transition-all"
         >
-          <i class="fa-solid fa-xmark text-sm"></i>
+          <i class="fa-solid fa-xmark text-sm md:text-base"></i>
         </button>
       </div>
 
-      <div class="px-4 md:px-6 py-4 flex-1 overflow-y-auto custom-scrollbar">
+      <div class="px-4 md:px-6 py-4 md:py-6 flex-1 overflow-y-auto custom-scrollbar">
         <div
           v-if="sortedEvents.length === 0"
           class="flex flex-col items-center justify-center py-12 text-slate-300"
@@ -39,7 +41,7 @@
             v-for="event in sortedEvents"
             :key="event.id"
             @click="emit('select', event.id)"
-            class="w-full text-left p-4 rounded-lg border transition-all duration-300 relative group overflow-hidden"
+            class="w-full text-left p-4 rounded-lg border transition-all duration-300 relative group overflow-hidden cursor-pointer"
             :class="[
               'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm hover:bg-slate-50 text-slate-800',
             ]"
@@ -74,11 +76,11 @@
       </div>
 
       <div
-        class="bg-slate-50/50 px-4 md:px-6 py-4 flex items-center justify-end gap-3 border-t border-slate-200 shrink-0"
+        class="bg-slate-50/50 px-4 md:px-6 py-4 md:py-5 flex items-center justify-end gap-3 border-t border-slate-200 shrink-0"
       >
         <button
           @click="emit('addEvent')"
-          class="flex-1 px-4 py-2.5 text-xs font-black text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+          class="flex-1 sm:flex-none px-4 md:px-6 py-2 md:py-2.5 text-xs font-black text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
         >
           <i class="fa-solid fa-plus"></i>
           <span>Add Event</span>

@@ -1,5 +1,5 @@
 <template>
-  <div class="absolute inset-0 overflow-y-auto pr-2 pb-12 custom-scrollbar">
+  <div ref="containerRef" class="absolute inset-0 overflow-y-auto pr-2 pb-12 custom-scrollbar">
     <div
       v-if="sortedEvents.length === 0"
       class="flex flex-col items-center justify-center h-full py-12 text-slate-300"
@@ -11,11 +11,12 @@
     <div v-else class="flex flex-col gap-3">
       <button
         v-for="event in sortedEvents"
+        :ref="(el) => setEventRef(event.id, el as HTMLElement)"
         :key="event.id"
-        @click="$emit('select', event.id)"
+        @click="emit('select', event.id)"
         @mouseenter="handleMouseEnter($event, event)"
         @mouseleave="hoveredEvent = null"
-        class="w-full text-left p-4 rounded-lg border transition-all duration-300 relative group overflow-hidden"
+        class="w-full text-left p-4 rounded-lg border transition-all duration-300 relative group overflow-hidden cursor-pointer"
         :class="[
           isSelected(event.id)
             ? 'text-white shadow-md -translate-y-0.5'
@@ -84,6 +85,12 @@ const props = defineProps<{
   selectedId: string | null
 }>()
 
+const emit = defineEmits<{
+  select: [id: string]
+}>()
+
+const containerRef = ref<HTMLElement | null>(null)
+const eventRefs = ref<Map<string, HTMLElement>>(new Map())
 const hoveredEvent = ref<{ event: IcsEvent; position: { x: number; y: number } } | null>(null)
 
 const sortedEvents = computed(() => {
@@ -107,6 +114,14 @@ const formattedDate = (dateStr: string) => {
   return formatDateUTC8(dateStr)
 }
 
+const setEventRef = (id: string, el: HTMLElement | null) => {
+  if (el) {
+    eventRefs.value.set(id, el)
+  } else {
+    eventRefs.value.delete(id)
+  }
+}
+
 const handleMouseEnter = (e: MouseEvent, event: IcsEvent) => {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
   hoveredEvent.value = {
@@ -117,4 +132,15 @@ const handleMouseEnter = (e: MouseEvent, event: IcsEvent) => {
     },
   }
 }
+
+const scrollToEvent = (eventId: string) => {
+  const el = eventRefs.value.get(eventId)
+  if (el && containerRef.value) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
+defineExpose({
+  scrollToEvent,
+})
 </script>

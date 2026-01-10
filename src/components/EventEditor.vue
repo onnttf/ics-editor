@@ -2,7 +2,7 @@
   <div class="fixed inset-0 z-60 flex items-center justify-center p-4 md:p-6">
     <div
       class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
-      @click="emit('cancel')"
+      @click="handleCancel"
     />
 
     <div
@@ -24,15 +24,44 @@
         <div class="flex flex-col sm:flex-row items-center gap-3">
           <button
             @click="isConfirmingDelete = false"
-            class="w-full sm:w-auto px-6 py-2.5 md:px-8 md:py-3 bg-slate-100 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all active:scale-95"
+            class="w-full sm:w-auto px-6 py-2.5 md:px-8 md:py-3 bg-slate-100 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all active:scale-95 cursor-pointer"
           >
             Keep Event
           </button>
           <button
             @click="emit('delete', event.id)"
-            class="w-full sm:w-auto px-6 py-2.5 md:px-8 md:py-3 bg-red-500 text-white rounded-lg font-black text-sm hover:bg-red-600 shadow-md transition-all active:scale-95"
+            class="w-full sm:w-auto px-6 py-2.5 md:px-8 md:py-3 bg-red-500 text-white rounded-lg font-black text-sm hover:bg-red-600 shadow-md transition-all active:scale-95 cursor-pointer"
           >
             Yes, Delete
+          </button>
+        </div>
+      </div>
+
+      <div
+        v-if="isConfirmingCancel"
+        class="absolute inset-0 z-60 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-6 text-center animate-in fade-in duration-200"
+      >
+        <div
+          class="w-14 h-14 md:w-16 md:h-16 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 mb-3 md:mb-4 shadow-inner"
+        >
+          <i class="fa-solid fa-triangle-exclamation text-xl md:text-2xl"></i>
+        </div>
+        <h3 class="text-lg md:text-xl font-black text-slate-900 mb-2">Unsaved Changes</h3>
+        <p class="text-slate-500 text-xs md:text-sm mb-4 md:mb-6 max-w-xs leading-relaxed">
+          You have unsaved changes. Are you sure you want to close?
+        </p>
+        <div class="flex flex-col sm:flex-row items-center gap-3">
+          <button
+            @click="handleConfirmCancel"
+            class="w-full sm:w-auto px-6 py-2.5 md:px-8 md:py-3 bg-slate-100 text-slate-600 rounded-lg font-bold text-sm hover:bg-slate-200 transition-all active:scale-95 cursor-pointer"
+          >
+            Discard Changes
+          </button>
+          <button
+            @click="isConfirmingCancel = false"
+            class="w-full sm:w-auto px-6 py-2.5 md:px-8 md:py-3 bg-blue-600 text-white rounded-lg font-black text-sm hover:bg-blue-700 shadow-md transition-all active:scale-95 cursor-pointer"
+          >
+            Keep Editing
           </button>
         </div>
       </div>
@@ -63,7 +92,7 @@
         <button
           v-if="!isNew"
           @click="isConfirmingDelete = true"
-          class="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all shadow-sm"
+          class="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all cursor-pointer shadow-sm"
           title="Delete Event"
         >
           <i class="fa-solid fa-trash-can text-sm"></i>
@@ -179,7 +208,7 @@
                 <button
                   @click="handleImproveDescription"
                   :disabled="isImproving"
-                  class="text-xs font-bold uppercase tracking-wider text-blue-600 hover:text-white hover:bg-blue-600 flex items-center gap-2 bg-blue-50 px-3 py-1.5 md:px-4 md:py-2 rounded-lg transition-all disabled:opacity-50 shadow-sm"
+                  class="text-xs font-bold uppercase tracking-wider text-blue-600 hover:text-white hover:bg-blue-600 flex items-center gap-2 bg-blue-50 px-3 py-1.5 md:px-4 md:py-2 rounded-lg transition-all disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   <i
                     :class="`fa-solid fa-wand-magic-sparkles ${isImproving ? 'animate-spin' : ''}`"
@@ -210,14 +239,14 @@
         ></div>
         <div class="flex-1 sm:flex-none flex items-center justify-end gap-3 md:gap-4">
           <button
-            @click="emit('cancel')"
-            class="px-3 md:px-6 py-2 md:py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all"
+            @click="handleCancel"
+            class="px-3 md:px-6 py-2 md:py-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all cursor-pointer"
           >
             Cancel
           </button>
           <button
             @click="handleConfirm"
-            class="flex-1 sm:flex-none px-4 md:px-6 py-2 md:py-2.5 text-xs font-black text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all active:scale-95 whitespace-nowrap"
+            class="flex-1 sm:flex-none px-4 md:px-6 py-2 md:py-2.5 text-xs font-black text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md transition-all active:scale-95 whitespace-nowrap cursor-pointer"
           >
             {{ isNew ? 'Create' : 'Save' }}
           </button>
@@ -257,14 +286,18 @@ const defaultColor = PRESET_COLORS[0]?.value || '#2563eb'
 const formData = ref<IcsEvent>({ ...props.event, color: props.event.color || defaultColor })
 const isImproving = ref(false)
 const isConfirmingDelete = ref(false)
+const isConfirmingCancel = ref(false)
 const presetColors = PRESET_COLORS
 const validationErrors = ref<Record<string, string>>({})
+const originalEvent = ref<IcsEvent>({ ...props.event, color: props.event.color || defaultColor })
 
 watch(
   () => props.event,
   (newEvent) => {
     formData.value = { ...newEvent, color: newEvent.color || defaultColor }
+    originalEvent.value = { ...newEvent, color: newEvent.color || defaultColor }
     isConfirmingDelete.value = false
+    isConfirmingCancel.value = false
   },
 )
 
@@ -282,6 +315,17 @@ const endDateTime = computed({
     if (!val) return
     formData.value.end = new Date(val).toISOString()
   },
+})
+
+const hasUnsavedChanges = computed(() => {
+  return (
+    formData.value.summary !== originalEvent.value.summary ||
+    formData.value.start !== originalEvent.value.start ||
+    formData.value.end !== originalEvent.value.end ||
+    formData.value.location !== originalEvent.value.location ||
+    formData.value.description !== originalEvent.value.description ||
+    formData.value.color !== originalEvent.value.color
+  )
 })
 
 const handleColorSelect = (color: string) => {
@@ -323,13 +367,27 @@ const validateForm = (): boolean => {
 
 const handleConfirm = () => {
   if (validateForm()) {
+    originalEvent.value = { ...formData.value }
     emit('confirm', formData.value)
   }
 }
 
+const handleCancel = () => {
+  if (hasUnsavedChanges.value) {
+    isConfirmingCancel.value = true
+  } else {
+    emit('cancel')
+  }
+}
+
+const handleConfirmCancel = () => {
+  isConfirmingCancel.value = false
+  emit('cancel')
+}
+
 const handleKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
-    emit('cancel')
+    handleCancel()
   }
 }
 

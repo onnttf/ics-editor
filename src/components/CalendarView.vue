@@ -82,41 +82,20 @@
               </span>
             </div>
             <div
-              class="flex flex-col gap-1 md:gap-1.5 overflow-y-auto overflow-x-hidden flex-1 custom-scrollbar min-h-0 pointer-events-auto pr-2"
+              class="flex flex-wrap gap-1 overflow-visible flex-1 min-h-0 pointer-events-auto content-start"
             >
               <button
-                v-for="ev in getVisibleEvents(date)"
+                v-for="ev in getEventsForDay(date)"
                 :key="ev.id"
-                @mouseenter="(e) => handleEventHover(e, ev)"
+                @click.stop="emit('selectEvent', ev.id)"
+                @mouseenter="(e) => handleEventDotHover(e, ev)"
                 @mouseleave="hoveredEvent = null"
-                class="w-full text-left rounded border transition-all truncate text-xs font-bold active:scale-[0.98] flex items-center shrink-0 py-1 px-1.5 md:px-2"
+                class="w-2 h-2 md:w-2.5 md:h-2.5 rounded-full transition-transform hover:scale-150 shrink-0 hover:z-10 cursor-pointer"
                 :class="{ 'opacity-40': !isCurrentMonth(date) }"
                 :style="{
-                  backgroundColor: `${ev.color || '#2563eb'}15`,
-                  borderColor: `${ev.color || '#2563eb'}40`,
-                  color: ev.color || '#2563eb',
+                  backgroundColor: ev.color || '#2563eb',
                 }"
-              >
-                <span class="flex-1 truncate">{{ ev.summary || '(No Title)' }}</span>
-              </button>
-              <button
-                v-if="getOverflowCount(date) > 0"
-                @click="
-                  (e) => {
-                    e.stopPropagation()
-                    emit('clickDate', date)
-                  }
-                "
-                class="w-full text-left px-1.5 md:px-2 py-1 rounded border transition-all text-xs font-bold shrink-0"
-                :class="{ 'opacity-40': !isCurrentMonth(date) }"
-                :style="{
-                  backgroundColor: '#f1f5f9',
-                  borderColor: '#cbd5e1',
-                  color: '#64748b',
-                }"
-              >
-                +{{ getOverflowCount(date) }} more
-              </button>
+              />
             </div>
           </div>
         </div>
@@ -192,7 +171,7 @@ defineExpose({
   navigateToDate,
 })
 
-const handleEventHover = (e: MouseEvent, event: IcsEvent) => {
+const handleEventDotHover = (e: MouseEvent, event: IcsEvent) => {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
   hoveredEvent.value = {
     event,
@@ -239,20 +218,5 @@ const getEventsForDay = (date: Date) => {
       return dayStart < eventEnd && dayEnd > eventStart && dayStartsEvent
     })
     .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
-}
-
-const maxVisibleEvents = computed(() => {
-  if (typeof window === 'undefined') return 3
-  return window.innerWidth < 768 ? 2 : 3
-})
-
-const getVisibleEvents = (date: Date) => {
-  const events = getEventsForDay(date)
-  return events.slice(0, maxVisibleEvents.value)
-}
-
-const getOverflowCount = (date: Date) => {
-  const events = getEventsForDay(date)
-  return Math.max(0, events.length - maxVisibleEvents.value)
 }
 </script>
